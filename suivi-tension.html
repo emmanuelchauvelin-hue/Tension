@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Suivi de tension</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg: #EEF3F1;
+    --paper: #FBFDFC;
+    --ink: #16302C;
+    --ink-soft: #4B615D;
+    --line: #D6E1DD;
+    --teal: #0E6E62;
+    --teal-dark: #0A4F47;
+    --normal: #2E8B6E;
+    --elevee: #C99A2E;
+    --haute1: #D3762B;
+    --haute2: #C24A3A;
+    --crise: #9C2B2B;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:48px;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:20px 16px 8px;}
+
+  header.app{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+  header.app h1{font-size:20px;margin:0;letter-spacing:-0.01em;font-weight:700;}
+  header.app .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin:0 0 2px;}
+
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:14px;
+  }
+
+  /* --- Gauge --- */
+  .gauge-card{text-align:center;position:relative;}
+  .gauge-card .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+  svg#gauge{width:100%;max-width:280px;height:auto;display:block;margin:0 auto;}
+  .needle{transform-origin:150px 150px;transition:transform .6s cubic-bezier(.22,1,.36,1);}
+  .gauge-readout{display:flex;justify-content:center;gap:22px;margin-top:6px;}
+  .gauge-readout div{text-align:center;}
+  .gauge-readout .val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:26px;line-height:1;}
+  .gauge-readout .lab{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
+  .gauge-status{display:inline-block;margin-top:10px;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+  .gauge-filter{
+    width:auto;max-width:220px;margin:0 auto 4px;display:block;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink);
+    border-radius:99px;padding:6px 28px 6px 14px;font-size:12px;font-weight:600;
+    font-family:'IBM Plex Sans',sans-serif;
+    -webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%234B615D'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+
+  /* --- Form --- */
+  .form-title{font-size:13px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+  label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:4px;font-weight:500;}
+  input{
+    width:100%;
+    border:1px solid var(--line);
+    background:var(--bg);
+    border-radius:9px;
+    padding:11px 10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:16px;
+    color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--teal);outline-offset:1px;}
+  button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:600;
+    border:none;
+    border-radius:9px;
+    padding:13px 16px;
+    font-size:15px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn-primary{width:100%;background:var(--teal);color:#fff;}
+  .btn-primary:active{background:var(--teal-dark);}
+  .actions{display:flex;gap:10px;margin-bottom:14px;}
+  .btn-secondary{flex:1;background:var(--paper);border:1px solid var(--line);color:var(--ink);}
+  .btn-secondary:active{background:var(--line);}
+
+  /* --- History --- */
+  .hist-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .hist-title h2{font-size:13px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin:0;}
+  .hist-title span{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .entry{
+    display:grid;
+    grid-template-columns:1fr auto auto;
+    align-items:center;
+    gap:10px;
+    padding:12px 4px;
+    border-bottom:1px solid var(--line);
+  }
+  .entry:last-child{border-bottom:none;}
+  .entry .when{font-size:12px;color:var(--ink-soft);}
+  .entry .when b{color:var(--ink);font-size:13px;display:block;}
+  .entry .vals{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;text-align:right;white-space:nowrap;}
+  .entry .vals small{font-family:'IBM Plex Sans',sans-serif;font-weight:400;color:var(--ink-soft);font-size:11px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;}
+  .del{background:none;border:none;color:var(--ink-soft);font-size:18px;padding:4px 6px;line-height:1;}
+  .empty{text-align:center;color:var(--ink-soft);font-size:13px;padding:24px 8px;}
+
+  footer.note{font-size:11px;color:var(--ink-soft);text-align:center;padding:10px 20px;line-height:1.5;}
+
+  .storage-warning{
+    background:#FBEFE4;border:1px solid var(--haute1);color:#7a4a12;
+    font-size:12px;padding:10px 12px;border-radius:10px;margin-bottom:14px;
+    line-height:1.5;display:none;
+  }
+
+  /* --- Period export panel --- */
+  #periodPanel{display:none;}
+  #periodPanel.open{display:block;}
+  .period-list{margin-top:4px;}
+  .period-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:9px 4px;border-bottom:1px solid var(--line);font-size:13px;
+  }
+  .period-row:last-child{border-bottom:none;}
+  .period-row .plab{font-weight:600;}
+  .period-row .prange{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .hint{font-size:11.5px;color:var(--ink-soft);margin:2px 0 12px;line-height:1.5;}
+
+  /* --- Chart --- */
+  .chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;}
+  #chart{display:block;}
+  .legend{display:flex;gap:18px;justify-content:center;margin-top:6px;}
+  .legend .item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft);}
+  .legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .chart-empty{text-align:center;color:var(--ink-soft);font-size:13px;padding:30px 8px;}
+  .toggle-btn{
+    background:none;border:1px solid var(--line);border-radius:99px;
+    padding:5px 13px;font-size:11px;font-weight:600;color:var(--teal);
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  .toggle-btn:active{background:var(--line);}
+  #chartBody{display:none;}
+  #chartBody.open{display:block;}
+
+  /* --- Print --- */
+  #printSheet{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    .wrap > .card, .wrap > header, footer.note, .actions{display:none !important;}
+    #printSheet, #printSheet *{visibility:visible;}
+    #printSheet{display:block;position:absolute;top:0;left:0;width:100%;}
+    #printSheet h1{font-family:'IBM Plex Sans',sans-serif;font-size:18px;margin-bottom:2px;}
+    #printSheet .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#444;margin-bottom:14px;}
+    table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+    th,td{border:1px solid #999;padding:5px 7px;text-align:center;}
+    thead tr.avg{background:#eee;font-weight:700;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app">
+    <div>
+      <p class="eyebrow">Manomètre personnel</p>
+      <h1>Suivi de tension</h1>
+    </div>
+  </header>
+
+  <div class="storage-warning" id="storageWarning">⚠️ Ce navigateur bloque la sauvegarde locale ici : vos relevés ne seront pas conservés en quittant la page. Ouvrez le fichier téléchargé directement dans Safari ou Chrome pour que tout soit sauvegardé.</div>
+
+  <div class="card gauge-card">
+    <p class="n">Moyenne des relevés</p>
+    <select class="gauge-filter" id="gaugeFilter" onchange="onFilterChange()"></select>
+    <svg id="gauge" viewBox="0 0 300 175">
+      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--normal)" stroke-width="16" stroke-dasharray="102 490" />
+      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--elevee)" stroke-width="16" stroke-dasharray="60 490" stroke-dashoffset="-102" />
+      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--haute1)" stroke-width="16" stroke-dasharray="80 490" stroke-dashoffset="-162" />
+      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--haute2)" stroke-width="16" stroke-dasharray="90 490" stroke-dashoffset="-242" />
+      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--crise)" stroke-width="16" stroke-dasharray="80 490" stroke-dashoffset="-332" />
+      <g class="needle" id="needle">
+        <line x1="150" y1="150" x2="150" y2="45" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="150" cy="150" r="7" fill="var(--ink)"/>
+      </g>
+    </svg>
+    <div class="gauge-readout">
+      <div><div class="val" id="avgSys">–</div><div class="lab">Systolique</div></div>
+      <div><div class="val" id="avgDia">–</div><div class="lab">Diastolique</div></div>
+      <div><div class="val" id="avgPul">–</div><div class="lab">Pouls</div></div>
+    </div>
+    <span class="gauge-status" id="gaugeStatus">Aucun relevé</span>
+  </div>
+
+  <div class="card">
+    <div class="hist-title">
+      <h2>Évolution</h2>
+      <button class="toggle-btn" id="chartToggleBtn" onclick="toggleChart()">Afficher</button>
+    </div>
+    <div id="chartBody">
+      <div class="hist-title"><span></span><span id="chartRange"></span></div>
+      <div class="chart-wrap"><svg id="chart" height="190"></svg></div>
+      <div class="legend" id="chartLegend"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="form-title">Nouveau relevé</p>
+    <div class="row2">
+      <div>
+        <label for="fDate">Date</label>
+        <input type="date" id="fDate">
+      </div>
+      <div>
+        <label for="fHeure">Heure</label>
+        <input type="time" id="fHeure">
+      </div>
+    </div>
+    <div class="row3">
+      <div>
+        <label for="fSys">Systolique</label>
+        <input type="number" id="fSys" inputmode="numeric" placeholder="120">
+      </div>
+      <div>
+        <label for="fDia">Diastolique</label>
+        <input type="number" id="fDia" inputmode="numeric" placeholder="80">
+      </div>
+      <div>
+        <label for="fPul">Pouls</label>
+        <input type="number" id="fPul" inputmode="numeric" placeholder="70">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="addEntry()">Ajouter le relevé</button>
+  </div>
+
+  <div class="actions">
+    <button class="btn-secondary" onclick="exportAll()">Tout exporter</button>
+    <button class="btn-secondary" onclick="togglePeriodPanel()">Onglet par période</button>
+    <button class="btn-secondary" onclick="window.print()">Imprimer / PDF</button>
+  </div>
+
+  <div class="card" id="periodPanel">
+    <p class="form-title">Nouvel onglet de période</p>
+    <p class="hint">Choisissez la plage couverte depuis votre dernier export. Chaque période devient un onglet séparé dans le classeur, pour comparer l'évolution dans le temps.</p>
+    <div class="row2">
+      <div>
+        <label for="pStart">Début</label>
+        <input type="date" id="pStart">
+      </div>
+      <div>
+        <label for="pEnd">Fin</label>
+        <input type="date" id="pEnd">
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label for="pLabel">Nom de l'onglet (optionnel)</label>
+      <input type="text" id="pLabel" placeholder="ex. Août – Octobre 2026">
+    </div>
+    <button class="btn-primary" onclick="createPeriodExport()">Créer l'onglet et télécharger</button>
+
+    <div class="period-list" id="periodList"></div>
+  </div>
+
+  <div class="card">
+    <div class="hist-title">
+      <h2>Historique</h2>
+      <span id="countLabel">0 relevé</span>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <footer class="note">Les données restent sur cet appareil (aucun envoi en ligne). Outil de suivi personnel — ne remplace pas un avis médical.</footer>
+</div>
+
+<!-- Sheet dédiée à l'impression -->
+<div id="printSheet">
+  <h1>Suivi de tension</h1>
+  <div class="sub" id="printSub"></div>
+  <table>
+    <thead>
+      <tr class="avg">
+        <td>Date</td><td>Heure</td><td id="pAvgC">Moy. C</td><td id="pAvgD">Moy. D</td><td id="pAvgE">Moy. E</td>
+      </tr>
+      <tr>
+        <th>A</th><th>B</th><th>C — Systolique</th><th>D — Diastolique</th><th>E — Pouls</th>
+      </tr>
+    </thead>
+    <tbody id="printBody"></tbody>
+  </table>
+</div>
+
+<script>
+let usingFallbackStorage = false;
+const store = (function(){
+  try{
+    const t='__tension_test__';
+    localStorage.setItem(t,'1');
+    localStorage.removeItem(t);
+    return localStorage;
+  }catch(e){
+    usingFallbackStorage = true;
+    const mem = {};
+    return {
+      getItem:(k)=> Object.prototype.hasOwnProperty.call(mem,k) ? mem[k] : null,
+      setItem:(k,v)=>{ mem[k] = String(v); },
+      removeItem:(k)=>{ delete mem[k]; }
+    };
+  }
+})();
+if(usingFallbackStorage){
+  document.getElementById('storageWarning').style.display = 'block';
+}
+
+const KEY = 'tension_releves_v1';
+let data = JSON.parse(store.getItem(KEY) || '[]');
+
+function today(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function nowTime(){ const d=new Date(); return d.toTimeString().slice(0,5); }
+document.getElementById('fDate').value = today();
+document.getElementById('fHeure').value = nowTime();
+
+function save(){ store.setItem(KEY, JSON.stringify(data)); }
+
+let chartVisible = store.getItem('tension_chart_visible_v1') === '1';
+
+function applyChartVisibility(){
+  const body = document.getElementById('chartBody');
+  const btn = document.getElementById('chartToggleBtn');
+  if(chartVisible){
+    body.classList.add('open');
+    btn.textContent = 'Masquer';
+  } else {
+    body.classList.remove('open');
+    btn.textContent = 'Afficher';
+  }
+}
+
+function toggleChart(){
+  chartVisible = !chartVisible;
+  store.setItem('tension_chart_visible_v1', chartVisible ? '1' : '0');
+  applyChartVisibility();
+  if(chartVisible) renderChart();
+}
+
+let currentFilter = 'all';
+
+function onFilterChange(){
+  currentFilter = document.getElementById('gaugeFilter').value;
+  updateGauge();
+}
+
+function populateGaugeFilter(){
+  const sel = document.getElementById('gaugeFilter');
+  const prev = currentFilter;
+  sel.innerHTML = '<option value="all">Toutes les périodes</option>' +
+    periods.map((p,i)=> `<option value="${i}">${p.label}</option>`).join('');
+  if(prev==='all' || periods[prev]){
+    sel.value = prev;
+    currentFilter = prev;
+  } else {
+    sel.value = 'all';
+    currentFilter = 'all';
+  }
+}
+
+function getFilteredData(){
+  if(currentFilter==='all' || !periods[currentFilter]) return data;
+  const p = periods[currentFilter];
+  return data.filter(e=> e.date>=p.start && e.date<=p.end);
+}
+
+function updateGauge(){
+  const set = getFilteredData();
+  const aSys = avg(set.map(e=>e.sys));
+  const aDia = avg(set.map(e=>e.dia));
+  const aPul = avg(set.map(e=>e.pul));
+  document.getElementById('avgSys').textContent = aSys!==null ? aSys.toFixed(1) : '–';
+  document.getElementById('avgDia').textContent = aDia!==null ? aDia.toFixed(1) : '–';
+  document.getElementById('avgPul').textContent = aPul!==null ? aPul.toFixed(1) : '–';
+
+  const statusEl = document.getElementById('gaugeStatus');
+  if(aSys!==null){
+    const c = classify(aSys,aDia);
+    statusEl.textContent = c.label + (set.length!==data.length ? ` · ${set.length} relevé${set.length>1?'s':''}` : '');
+    statusEl.style.background = c.color;
+    statusEl.style.color = '#fff';
+  } else {
+    statusEl.textContent = 'Aucun relevé sur cette période';
+    statusEl.style.background = 'var(--line)';
+    statusEl.style.color = 'var(--ink-soft)';
+  }
+  const needle = document.getElementById('needle');
+  const val = aSys!==null ? aSys : 100;
+  const clamped = Math.max(70, Math.min(200, val));
+  const angle = ((clamped-70)/(200-70))*180 - 90;
+  needle.style.transform = `rotate(${angle}deg)`;
+}
+
+function classify(sys,dia){
+  if(sys>=180||dia>=120) return {label:'Crise', color:'var(--crise)'};
+  if(sys>=140||dia>=90)  return {label:'Hypertension 2', color:'var(--haute2)'};
+  if(sys>=130||dia>=80)  return {label:'Hypertension 1', color:'var(--haute1)'};
+  if(sys>=120)           return {label:'Élevée', color:'var(--elevee)'};
+  return {label:'Normale', color:'var(--normal)'};
+}
+
+function addEntry(){
+  const date = document.getElementById('fDate').value;
+  const heure = document.getElementById('fHeure').value;
+  const sys = parseFloat(document.getElementById('fSys').value);
+  const dia = parseFloat(document.getElementById('fDia').value);
+  const pul = parseFloat(document.getElementById('fPul').value);
+  if(!date || !heure || isNaN(sys) || isNaN(dia) || isNaN(pul)){
+    alert('Merci de remplir la date, l\'heure, et les trois valeurs.');
+    return;
+  }
+  data.push({date,heure,sys,dia,pul});
+  save();
+  document.getElementById('fSys').value='';
+  document.getElementById('fDia').value='';
+  document.getElementById('fPul').value='';
+  document.getElementById('fSys').focus();
+  render();
+}
+
+function deleteEntry(i){
+  data.splice(i,1);
+  save();
+  render();
+}
+
+function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
+
+function render(){
+  const sorted = [...data].sort((a,b)=> (b.date+b.heure).localeCompare(a.date+a.heure));
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  if(sorted.length===0){
+    list.innerHTML = '<div class="empty">Aucun relevé pour l\'instant.<br>Ajoutez votre première mesure ci-dessus.</div>';
+  } else {
+    sorted.forEach((e)=>{
+      const realIndex = data.indexOf(e);
+      const c = classify(e.sys,e.dia);
+      const row = document.createElement('div');
+      row.className='entry';
+      row.innerHTML = `
+        <div class="when"><b>${formatDate(e.date)}</b>${e.heure}</div>
+        <div class="vals"><span class="dot" style="background:${c.color}"></span>${e.sys}/${e.dia} <small>· ${e.pul} bpm</small></div>
+        <button class="del" onclick="deleteEntry(${realIndex})" aria-label="Supprimer">✕</button>
+      `;
+      list.appendChild(row);
+    });
+  }
+  document.getElementById('countLabel').textContent = data.length + (data.length>1?' relevés':' relevé');
+
+  populateGaugeFilter();
+  updateGauge();
+
+  const aSys = avg(data.map(e=>e.sys));
+  const aDia = avg(data.map(e=>e.dia));
+  const aPul = avg(data.map(e=>e.pul));
+  renderPrintSheet(sorted, aSys, aDia, aPul);
+  if(chartVisible) renderChart();
+}
+
+function formatDate(d){
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function renderPrintSheet(sorted, aSys, aDia, aPul){
+  document.getElementById('pAvgC').textContent = aSys!==null ? aSys.toFixed(1) : '–';
+  document.getElementById('pAvgD').textContent = aDia!==null ? aDia.toFixed(1) : '–';
+  document.getElementById('pAvgE').textContent = aPul!==null ? aPul.toFixed(1) : '–';
+  document.getElementById('printSub').textContent = 'Édité le ' + formatDate(today()) + ' — ' + data.length + ' relevé(s)';
+  const body = document.getElementById('printBody');
+  body.innerHTML = '';
+  // chronological order for the printed record
+  const chrono = [...data].sort((a,b)=> (a.date+a.heure).localeCompare(b.date+b.heure));
+  chrono.forEach(e=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${formatDate(e.date)}</td><td>${e.heure}</td><td>${e.sys}</td><td>${e.dia}</td><td>${e.pul}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function sheetFromEntries(entries){
+  const chrono = [...entries].sort((a,b)=> (a.date+a.heure).localeCompare(b.date+b.heure));
+  const aSys = avg(chrono.map(e=>e.sys));
+  const aDia = avg(chrono.map(e=>e.dia));
+  const aPul = avg(chrono.map(e=>e.pul));
+  const rows = [];
+  rows.push(['Date','Heure', aSys!==null?+aSys.toFixed(1):'', aDia!==null?+aDia.toFixed(1):'', aPul!==null?+aPul.toFixed(1):'']);
+  chrono.forEach(e=> rows.push([e.date, e.heure, e.sys, e.dia, e.pul]));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:12},{wch:8},{wch:12},{wch:14},{wch:8}];
+  return {ws, aSys, aDia, aPul, count: chrono.length};
+}
+
+function safeSheetName(name){
+  let n = (name || 'Onglet').replace(/[:\\\/\?\*\[\]]/g,'-').trim();
+  return n.slice(0,31) || 'Onglet';
+}
+
+function exportAll(){
+  const {ws} = sheetFromEntries(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName('Tout'));
+  XLSX.writeFile(wb, 'suivi-tension.xlsx');
+}
+
+/* --- Export par période (un onglet par relevé, tous les ~2 mois) --- */
+const PKEY = 'tension_periodes_v1';
+let periods = JSON.parse(store.getItem(PKEY) || '[]');
+function savePeriods(){ store.setItem(PKEY, JSON.stringify(periods)); }
+
+function togglePeriodPanel(){
+  const panel = document.getElementById('periodPanel');
+  const opening = !panel.classList.contains('open');
+  panel.classList.toggle('open');
+  if(opening){
+    const lastEnd = periods.length ? periods[periods.length-1].end : null;
+    let start;
+    if(lastEnd){
+      const d = new Date(lastEnd); d.setDate(d.getDate()+1);
+      start = d.toISOString().slice(0,10);
+    } else {
+      const dates = data.map(e=>e.date).sort();
+      start = dates.length ? dates[0] : today();
+    }
+    document.getElementById('pStart').value = start;
+    document.getElementById('pEnd').value = today();
+    document.getElementById('pLabel').value = '';
+    renderPeriodList();
+  }
+}
+
+function renderPeriodList(){
+  const box = document.getElementById('periodList');
+  if(periods.length===0){ box.innerHTML=''; return; }
+  box.innerHTML = periods.map((p,i)=>`
+    <div class="period-row">
+      <div><span class="plab">${p.label}</span><span class="prange">${formatDate(p.start)} → ${formatDate(p.end)}</span></div>
+      <button class="del" onclick="deletePeriod(${i})" aria-label="Supprimer la période">✕</button>
+    </div>
+  `).join('');
+}
+
+function deletePeriod(i){
+  periods.splice(i,1);
+  savePeriods();
+  renderPeriodList();
+  populateGaugeFilter();
+  updateGauge();
+  renderChart();
+}
+
+function createPeriodExport(){
+  const start = document.getElementById('pStart').value;
+  const end = document.getElementById('pEnd').value;
+  if(!start || !end || start>end){
+    alert('Merci de vérifier les dates de début et de fin.');
+    return;
+  }
+  let label = document.getElementById('pLabel').value.trim();
+  if(!label) label = formatDate(start) + '–' + formatDate(end);
+  periods.push({label, start, end, created: today()});
+  savePeriods();
+  renderPeriodList();
+  populateGaugeFilter();
+  updateGauge();
+  renderChart();
+  downloadPeriodWorkbook();
+}
+
+function downloadPeriodWorkbook(){
+  const wb = XLSX.utils.book_new();
+
+  // Onglet "Évolution" : une ligne de synthèse par période, pour comparer dans le temps
+  const evoRows = [['Période','Début','Fin','Moy. Systolique (C)','Moy. Diastolique (D)','Moy. Pouls (E)','Relevés']];
+  periods.forEach(p=>{
+    const entries = data.filter(e=> e.date>=p.start && e.date<=p.end);
+    const s = sheetFromEntries(entries);
+    evoRows.push([p.label, p.start, p.end, s.aSys!==null?+s.aSys.toFixed(1):'', s.aDia!==null?+s.aDia.toFixed(1):'', s.aPul!==null?+s.aPul.toFixed(1):'', s.count]);
+  });
+  const evoWs = XLSX.utils.aoa_to_sheet(evoRows);
+  evoWs['!cols'] = [{wch:22},{wch:12},{wch:12},{wch:16},{wch:16},{wch:10},{wch:9}];
+  XLSX.utils.book_append_sheet(wb, evoWs, 'Évolution');
+
+  // Un onglet par période, avec la moyenne en ligne 1 (colonnes C1/D1/E1) puis le détail
+  const usedNames = new Set();
+  periods.forEach(p=>{
+    const entries = data.filter(e=> e.date>=p.start && e.date<=p.end);
+    const {ws} = sheetFromEntries(entries);
+    let name = safeSheetName(p.label);
+    let n = name, k=2;
+    while(usedNames.has(n)){ n = safeSheetName(name.slice(0,28)+'-'+k); k++; }
+    usedNames.add(n);
+    XLSX.utils.book_append_sheet(wb, ws, n);
+  });
+
+  XLSX.writeFile(wb, 'suivi-tension-periodes.xlsx');
+}
+
+function renderChart(){
+  const svg = document.getElementById('chart');
+  const chrono = [...data].sort((a,b)=> (a.date+a.heure).localeCompare(b.date+b.heure));
+  document.getElementById('chartRange').textContent = chrono.length ? formatDate(chrono[0].date)+' → '+formatDate(chrono[chrono.length-1].date) : '';
+  document.getElementById('chartLegend').innerHTML = `
+    <div class="item"><span class="dot" style="background:var(--haute1)"></span>Systolique</div>
+    <div class="item"><span class="dot" style="background:var(--teal)"></span>Diastolique</div>`;
+
+  if(chrono.length < 2){
+    svg.innerHTML = `<foreignObject x="0" y="0" width="100%" height="190"><div xmlns="http://www.w3.org/1999/xhtml" class="chart-empty">Ajoutez au moins deux relevés pour voir la courbe d'évolution.</div></foreignObject>`;
+    svg.removeAttribute('width');
+    return;
+  }
+
+  const padL=32, padR=12, padT=12, padB=28, plotH=150;
+  const spacing = chrono.length > 10 ? 26 : Math.max(46, Math.floor((document.querySelector('.chart-wrap').clientWidth-padL-padR)/(chrono.length-1)));
+  const plotW = spacing*(chrono.length-1);
+  const w = padL+padR+plotW;
+  const h = padT+plotH+padB;
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+  const vals = chrono.flatMap(e=>[e.sys,e.dia]);
+  let yMin = Math.floor(Math.min(...vals)/10)*10 - 10;
+  let yMax = Math.ceil(Math.max(...vals)/10)*10 + 10;
+  const y = v => padT + plotH - (v-yMin)/(yMax-yMin)*plotH;
+  const x = i => padL + i*spacing;
+
+  let svgHtml = '';
+
+  const step = (yMax-yMin)/4;
+  for(let i=0;i<=4;i++){
+    const v = Math.round(yMin + i*step);
+    const yy = y(v);
+    svgHtml += `<line x1="${padL}" y1="${yy}" x2="${padL+plotW}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`;
+    svgHtml += `<text x="${padL-6}" y="${yy+3}" font-size="9" fill="var(--ink-soft)" font-family="IBM Plex Mono, monospace" text-anchor="end">${v}</text>`;
+  }
+
+  if(periods.length){
+    periods.forEach(p=>{
+      let idx=-1;
+      chrono.forEach((e,i)=>{ if(e.date<=p.end) idx=i; });
+      if(idx>=0 && idx<chrono.length-1){
+        const xx = x(idx)+spacing/2;
+        svgHtml += `<line x1="${xx}" y1="${padT}" x2="${xx}" y2="${padT+plotH}" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>`;
+      }
+    });
+  }
+
+  const labelEvery = Math.max(1, Math.ceil(chrono.length/6));
+  chrono.forEach((e,i)=>{
+    if(i%labelEvery===0 || i===chrono.length-1){
+      svgHtml += `<text x="${x(i)}" y="${padT+plotH+16}" font-size="9" fill="var(--ink-soft)" font-family="IBM Plex Mono, monospace" text-anchor="middle">${formatDate(e.date).slice(0,5)}</text>`;
+    }
+  });
+
+  function polyline(key,color){
+    const pts = chrono.map((e,i)=> `${x(i)},${y(e[key])}`).join(' ');
+    let s = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    chrono.forEach((e,i)=>{ s += `<circle cx="${x(i)}" cy="${y(e[key])}" r="2.6" fill="${color}"/>`; });
+    return s;
+  }
+  svgHtml += polyline('dia','var(--teal)');
+  svgHtml += polyline('sys','var(--haute1)');
+
+  svg.innerHTML = svgHtml;
+}
+
+applyChartVisibility();
+render();
+</script>
+</body>
+</html>
