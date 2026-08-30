@@ -27,6 +27,9 @@
     --haute1: #D3762B;
     --haute2: #C24A3A;
     --crise: #9C2B2B;
+    --sys-color: #E4544A;
+    --dia-color: #6FB86A;
+    --pul-color: #4B9FD6;
     --radius: 14px;
   }
   *{box-sizing:border-box;}
@@ -56,12 +59,14 @@
   .gauge-card{text-align:center;position:relative;}
   .gauge-card .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
   svg#gauge{width:100%;max-width:280px;height:auto;display:block;margin:0 auto;}
-  .needle{transform-origin:150px 150px;transition:transform .6s cubic-bezier(.22,1,.36,1);}
-  .gauge-readout{display:flex;justify-content:center;gap:22px;margin-top:6px;}
-  .gauge-readout div{text-align:center;}
-  .gauge-readout .val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:26px;line-height:1;}
-  .gauge-readout .lab{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
-  .gauge-status{display:inline-block;margin-top:10px;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+  .gauge-readout{display:flex;justify-content:center;gap:14px;margin-top:14px;}
+  .ring{position:relative;width:92px;height:92px;flex:0 0 auto;}
+  .ring svg{width:100%;height:100%;}
+  .ring-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring-avg{font-size:8px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;}
+  .gauge-readout .val{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:24px;line-height:1.15;color:var(--ink);}
+  .ring-lab{font-size:10px;font-weight:700;letter-spacing:.05em;margin-top:2px;}
+  .gauge-status{display:inline-block;margin-top:14px;padding:5px 14px;border-radius:99px;font-size:12px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
   .gauge-filter{
     width:auto;max-width:180px;margin:0;
     border:1px solid var(--line);background:var(--bg);color:var(--ink);
@@ -229,51 +234,35 @@
       <button class="filter-btn" id="btnCurrent" onclick="goCurrent()">Actuelle</button>
       <select class="gauge-filter" id="gaugeFilter" onchange="onFilterChange()"></select>
     </div>
-    <svg id="gauge" viewBox="0 0 300 175">
-      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--normal)" stroke-width="16" stroke-dasharray="204.2 500" />
-      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--haute1)" stroke-width="16" stroke-dasharray="15.7 500" stroke-dashoffset="-204.2" />
-      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--haute2)" stroke-width="16" stroke-dasharray="125.7 500" stroke-dashoffset="-219.9" />
-      <path d="M 20 150 A 130 130 0 0 1 280 150" fill="none" stroke="var(--crise)" stroke-width="16" stroke-dasharray="62.8 500" stroke-dashoffset="-345.6" />
-      <g class="needle" id="needle">
-        <line x1="150" y1="150" x2="150" y2="45" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="150" cy="150" r="7" fill="var(--ink)"/>
-      </g>
-    </svg>
     <div class="gauge-readout">
-      <div><div class="val" id="avgSys">–</div><div class="lab">Systolique</div></div>
-      <div><div class="val" id="avgDia">–</div><div class="lab">Diastolique</div></div>
-      <div><div class="val" id="avgPul">–</div><div class="lab">Pouls</div></div>
+      <div class="ring">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--sys-color)" stroke-width="6"/></svg>
+        <div class="ring-inner">
+          <span class="ring-avg">Moy.</span>
+          <span class="val" id="avgSys">–</span>
+          <span class="ring-lab" style="color:var(--sys-color);">SYS</span>
+        </div>
+      </div>
+      <div class="ring">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--dia-color)" stroke-width="6"/></svg>
+        <div class="ring-inner">
+          <span class="ring-avg">Moy.</span>
+          <span class="val" id="avgDia">–</span>
+          <span class="ring-lab" style="color:var(--dia-color);">DIA</span>
+        </div>
+      </div>
+      <div class="ring">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--pul-color)" stroke-width="6"/></svg>
+        <div class="ring-inner">
+          <span class="ring-avg">Moy.</span>
+          <span class="val" id="avgPul">–</span>
+          <span class="ring-lab" style="color:var(--pul-color);">PUL</span>
+        </div>
+      </div>
     </div>
     <span class="gauge-status" id="gaugeStatus">Aucun relevé</span>
     <div>
       <button class="toggle-btn" style="margin-top:10px;" onclick="togglePeriodPanel()">Archiver cette période →</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="hist-title">
-      <h2>Traitement <span id="txFilterLabel" style="font-weight:400;color:var(--ink-soft);text-transform:none;letter-spacing:normal;"></span></h2>
-      <button class="toggle-btn" id="txToggleBtn" onclick="toggleTreatment()">Afficher</button>
-    </div>
-    <div id="treatmentBody">
-      <p class="tx-readonly-note" id="txReadonlyNote" style="display:none;">Vous consultez le traitement archivé avec cette période — vous pouvez toujours le compléter.</p>
-      <div id="txList"></div>
-      <div class="tx-add" id="txAddRow">
-        <input type="text" id="txInput" placeholder="Ex. Amlodipine 5mg, le matin" onkeydown="if(event.key==='Enter'){addTreatmentItem();}">
-        <button onclick="addTreatmentItem()">Ajouter</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="hist-title">
-      <h2>Évolution</h2>
-      <button class="toggle-btn" id="chartToggleBtn" onclick="toggleChart()">Afficher</button>
-    </div>
-    <div id="chartBody">
-      <div class="hist-title"><span></span><span id="chartRange"></span></div>
-      <div class="chart-wrap"><svg id="chart" height="190"></svg></div>
-      <div class="legend" id="chartLegend"></div>
     </div>
   </div>
 
@@ -312,9 +301,36 @@
     <button class="btn-primary" onclick="addEntry()">Ajouter le relevé</button>
   </div>
 
+  <div class="card">
+    <div class="hist-title">
+      <h2>Traitement <span id="txFilterLabel" style="font-weight:400;color:var(--ink-soft);text-transform:none;letter-spacing:normal;"></span></h2>
+      <button class="toggle-btn" id="txToggleBtn" onclick="toggleTreatment()">Afficher</button>
+    </div>
+    <div id="treatmentBody">
+      <p class="tx-readonly-note" id="txReadonlyNote" style="display:none;">Traitement archivé avec cette période (lecture seule).</p>
+      <div id="txList"></div>
+      <div class="tx-add" id="txAddRow">
+        <input type="text" id="txInput" placeholder="Ex. Amlodipine 5mg, le matin" onkeydown="if(event.key==='Enter'){addTreatmentItem();}">
+        <button onclick="addTreatmentItem()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hist-title">
+      <h2>Évolution</h2>
+      <button class="toggle-btn" id="chartToggleBtn" onclick="toggleChart()">Afficher</button>
+    </div>
+    <div id="chartBody">
+      <div class="hist-title"><span></span><span id="chartRange"></span></div>
+      <div class="chart-wrap"><svg id="chart" height="190"></svg></div>
+      <div class="legend" id="chartLegend"></div>
+    </div>
+  </div>
+
   <div class="actions">
     <button class="btn-secondary" onclick="exportAll()">Tout exporter</button>
-    <button class="btn-secondary" onclick="toggleNamePanel()">Nouvelle période</button>
+    <button class="btn-secondary" onclick="toggleNamePanel()">Renommer</button>
     <button class="btn-secondary" onclick="window.print()">Imprimer / PDF</button>
   </div>
 
@@ -519,26 +535,31 @@ function deleteTreatmentItem(i){
 // renvoie le tableau de traitement correspondant à la période actuellement affichée
 // (la période en cours, ou une période archivée — créant son tableau si besoin)
 function treatmentTargetArray(){
-  if(currentFilter==='current' || currentFilter==='all') return currentTreatment;
-  const p = periods[currentFilter];
-  if(!p) return currentTreatment;
-  if(!p.treatment) p.treatment = [];
-  return p.treatment;
+  return currentTreatment;
 }
 
 function persistTreatmentTarget(){
-  if(currentFilter==='current' || currentFilter==='all'){ saveTreatment(); }
-  else { savePeriods(); }
+  saveTreatment();
 }
 
 function renderTreatment(){
   const label = document.getElementById('txFilterLabel');
   const note = document.getElementById('txReadonlyNote');
+  const addRow = document.getElementById('txAddRow');
   const list = document.getElementById('txList');
 
-  const items = treatmentTargetArray();
+  const editable = (currentFilter==='current' || currentFilter==='all');
+  let items;
+  if(editable){
+    items = currentTreatment;
+  } else {
+    const p = periods[currentFilter];
+    items = p && p.treatment ? p.treatment : [];
+  }
+
   label.textContent = '· ' + currentFilterLabel();
-  note.style.display = (currentFilter==='current' || currentFilter==='all') ? 'none' : 'block';
+  note.style.display = editable ? 'none' : 'block';
+  addRow.style.display = editable ? 'flex' : 'none';
 
   if(items.length===0){
     list.innerHTML = '<div class="empty">Aucun traitement renseigné.</div>';
@@ -546,7 +567,7 @@ function renderTreatment(){
     list.innerHTML = items.map((t,i)=> `
       <div class="tx-row">
         <span>${t}</span>
-        <button class="del" onclick="deleteTreatmentItem(${i})" aria-label="Supprimer">✕</button>
+        ${editable ? `<button class="del" onclick="deleteTreatmentItem(${i})" aria-label="Supprimer">✕</button>` : ''}
       </div>
     `).join('');
   }
@@ -634,11 +655,6 @@ function updateGauge(){
     statusEl.style.background = 'var(--line)';
     statusEl.style.color = 'var(--ink-soft)';
   }
-  const needle = document.getElementById('needle');
-  const val = aSys!==null ? aSys : 100;
-  const clamped = Math.max(70, Math.min(200, val));
-  const angle = ((clamped-70)/(200-70))*180 - 90;
-  needle.style.transform = `rotate(${angle}deg)`;
 }
 
 function classify(sys,dia){
@@ -890,8 +906,9 @@ function renderChart(){
   const chrono = [...data].sort((a,b)=> (a.date+a.heure).localeCompare(b.date+b.heure));
   document.getElementById('chartRange').textContent = chrono.length ? formatDate(chrono[0].date)+' → '+formatDate(chrono[chrono.length-1].date) : '';
   document.getElementById('chartLegend').innerHTML = `
-    <div class="item"><span class="dot" style="background:var(--haute1)"></span>Systolique</div>
-    <div class="item"><span class="dot" style="background:var(--teal)"></span>Diastolique</div>`;
+    <div class="item"><span class="dot" style="background:var(--sys-color)"></span>Systolique</div>
+    <div class="item"><span class="dot" style="background:var(--dia-color)"></span>Diastolique</div>
+    <div class="item"><span class="dot" style="background:var(--pul-color)"></span>Pouls</div>`;
 
   if(chrono.length < 2){
     svg.innerHTML = `<foreignObject x="0" y="0" width="100%" height="190"><div xmlns="http://www.w3.org/1999/xhtml" class="chart-empty">Ajoutez au moins deux relevés pour voir la courbe d'évolution.</div></foreignObject>`;
@@ -908,7 +925,7 @@ function renderChart(){
   svg.setAttribute('height', h);
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
 
-  const vals = chrono.flatMap(e=>[e.sys,e.dia]);
+  const vals = chrono.flatMap(e=>[e.sys,e.dia,e.pul]);
   let yMin = Math.floor(Math.min(...vals)/10)*10 - 10;
   let yMax = Math.ceil(Math.max(...vals)/10)*10 + 10;
   const y = v => padT + plotH - (v-yMin)/(yMax-yMin)*plotH;
@@ -942,14 +959,21 @@ function renderChart(){
     }
   });
 
-  function polyline(key,color){
+  // aire remplie entre systolique et diastolique
+  const sysPts = chrono.map((e,i)=> `${x(i)},${y(e.sys)}`);
+  const diaPtsRev = chrono.map((e,i)=> `${x(i)},${y(e.dia)}`).reverse();
+  svgHtml += `<polygon points="${sysPts.join(' ')} ${diaPtsRev.join(' ')}" fill="var(--sys-color)" opacity="0.12"/>`;
+
+  function polyline(key,color,dashed){
     const pts = chrono.map((e,i)=> `${x(i)},${y(e[key])}`).join(' ');
-    let s = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const dash = dashed ? ' stroke-dasharray="4 3"' : '';
+    let s = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"${dash}/>`;
     chrono.forEach((e,i)=>{ s += `<circle cx="${x(i)}" cy="${y(e[key])}" r="2.6" fill="${color}"/>`; });
     return s;
   }
-  svgHtml += polyline('dia','var(--teal)');
-  svgHtml += polyline('sys','var(--haute1)');
+  svgHtml += polyline('pul','var(--pul-color)', true);
+  svgHtml += polyline('dia','var(--dia-color)');
+  svgHtml += polyline('sys','var(--sys-color)');
 
   svg.innerHTML = svgHtml;
 }
