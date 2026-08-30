@@ -362,6 +362,7 @@
 <div id="printSheet">
   <h1>Suivi de tension</h1>
   <div class="sub" id="printSub"></div>
+  <div id="printTreatment"></div>
   <table>
     <thead>
       <tr class="avg">
@@ -373,12 +374,11 @@
     </thead>
     <tbody id="printBody"></tbody>
   </table>
-  <div id="printTreatment"></div>
 </div>
 
 <style>
   @media print{
-    #printTreatment{margin-top:16px;font-family:'IBM Plex Sans',sans-serif;}
+    #printTreatment{margin-bottom:16px;font-family:'IBM Plex Sans',sans-serif;}
     #printTreatment h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;color:#333;}
     #printTreatment ul{margin:0;padding-left:18px;font-size:12px;line-height:1.6;}
   }
@@ -502,6 +502,7 @@ function addTreatmentItem(){
   persistTreatmentTarget();
   input.value = '';
   renderTreatment();
+  renderPrintSheet();
 }
 
 function deleteTreatmentItem(i){
@@ -509,6 +510,7 @@ function deleteTreatmentItem(i){
   target.splice(i,1);
   persistTreatmentTarget();
   renderTreatment();
+  renderPrintSheet();
 }
 
 // renvoie le tableau de traitement correspondant à la période actuellement affichée
@@ -773,7 +775,7 @@ function safeSheetName(name){
 }
 
 function exportAll(){
-  const {ws} = sheetFromEntries(data);
+  const {ws} = sheetFromEntries(data, currentTreatment);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, safeSheetName('Tout'));
   XLSX.writeFile(wb, 'suivi-tension.xlsx');
