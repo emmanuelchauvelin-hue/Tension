@@ -196,13 +196,16 @@
   /* --- Print --- */
   #printSheet{display:none;}
   @media print{
+    @page{ margin: 1.4cm; }
     body *{visibility:hidden;}
     .wrap > .card, .wrap > header, footer.note, .actions{display:none !important;}
     #printSheet, #printSheet *{visibility:visible;}
     #printSheet{display:block;position:absolute;top:0;left:0;width:100%;}
-    #printSheet h1{font-family:'IBM Plex Sans',sans-serif;font-size:18px;margin-bottom:2px;}
-    #printSheet .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#444;margin-bottom:14px;}
-    table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+    #printSheet h1{font-family:'IBM Plex Sans',sans-serif;font-size:18px;margin-bottom:2px;page-break-after:avoid;}
+    #printSheet .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#444;margin-bottom:14px;page-break-after:avoid;}
+    table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:11px;page-break-inside:auto;}
+    thead{display:table-header-group;}
+    tr{page-break-inside:avoid;page-break-after:auto;}
     th,td{border:1px solid #999;padding:5px 7px;text-align:center;}
     thead tr.avg{background:#eee;font-weight:700;}
   }
@@ -378,7 +381,7 @@
 
 <style>
   @media print{
-    #printTreatment{margin-bottom:16px;font-family:'IBM Plex Sans',sans-serif;}
+    #printTreatment{margin-bottom:16px;font-family:'IBM Plex Sans',sans-serif;page-break-inside:avoid;}
     #printTreatment h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;color:#333;}
     #printTreatment ul{margin:0;padding-left:18px;font-size:12px;line-height:1.6;}
   }
