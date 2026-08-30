@@ -492,7 +492,7 @@ function startNewPeriodName(){
   renderPrintSheet();
 }
 
-let treatmentVisible = store.getItem('tension_tx_visible_v1') === '1';
+let treatmentVisible = store.getItem('tension_tx_visible_v1') !== '0';
 
 function applyTreatmentVisibility(){
   const body = document.getElementById('treatmentBody');
@@ -543,23 +543,13 @@ function persistTreatmentTarget(){
 }
 
 function renderTreatment(){
-  const label = document.getElementById('txFilterLabel');
   const note = document.getElementById('txReadonlyNote');
   const addRow = document.getElementById('txAddRow');
   const list = document.getElementById('txList');
 
-  const editable = (currentFilter==='current' || currentFilter==='all');
-  let items;
-  if(editable){
-    items = currentTreatment;
-  } else {
-    const p = periods[currentFilter];
-    items = p && p.treatment ? p.treatment : [];
-  }
-
-  label.textContent = '· ' + currentFilterLabel();
-  note.style.display = editable ? 'none' : 'block';
-  addRow.style.display = editable ? 'flex' : 'none';
+  const items = currentTreatment;
+  note.style.display = 'none';
+  addRow.style.display = 'flex';
 
   if(items.length===0){
     list.innerHTML = '<div class="empty">Aucun traitement renseigné.</div>';
@@ -567,7 +557,7 @@ function renderTreatment(){
     list.innerHTML = items.map((t,i)=> `
       <div class="tx-row">
         <span>${t}</span>
-        ${editable ? `<button class="del" onclick="deleteTreatmentItem(${i})" aria-label="Supprimer">✕</button>` : ''}
+        <button class="del" onclick="deleteTreatmentItem(${i})" aria-label="Supprimer">✕</button>
       </div>
     `).join('');
   }
@@ -640,9 +630,9 @@ function updateGauge(){
   const aSys = avg(set.map(e=>e.sys));
   const aDia = avg(set.map(e=>e.dia));
   const aPul = avg(set.map(e=>e.pul));
-  document.getElementById('avgSys').textContent = aSys!==null ? aSys.toFixed(1) : '–';
-  document.getElementById('avgDia').textContent = aDia!==null ? aDia.toFixed(1) : '–';
-  document.getElementById('avgPul').textContent = aPul!==null ? aPul.toFixed(1) : '–';
+  document.getElementById('avgSys').textContent = aSys!==null ? Math.round(aSys) : '–';
+  document.getElementById('avgDia').textContent = aDia!==null ? Math.round(aDia) : '–';
+  document.getElementById('avgPul').textContent = aPul!==null ? Math.round(aPul) : '–';
 
   const statusEl = document.getElementById('gaugeStatus');
   if(aSys!==null){
@@ -744,9 +734,9 @@ function renderPrintSheet(){
   const aDia = avg(chrono.map(e=>e.dia));
   const aPul = avg(chrono.map(e=>e.pul));
 
-  document.getElementById('pAvgC').textContent = aSys!==null ? aSys.toFixed(1) : '–';
-  document.getElementById('pAvgD').textContent = aDia!==null ? aDia.toFixed(1) : '–';
-  document.getElementById('pAvgE').textContent = aPul!==null ? aPul.toFixed(1) : '–';
+  document.getElementById('pAvgC').textContent = aSys!==null ? Math.round(aSys) : '–';
+  document.getElementById('pAvgD').textContent = aDia!==null ? Math.round(aDia) : '–';
+  document.getElementById('pAvgE').textContent = aPul!==null ? Math.round(aPul) : '–';
   document.getElementById('printSub').textContent = currentFilterLabel() + ' — Édité le ' + formatDate(today()) + ' — ' + chrono.length + ' relevé(s)';
 
   const body = document.getElementById('printBody');
@@ -757,16 +747,9 @@ function renderPrintSheet(){
     body.appendChild(tr);
   });
 
-  let items;
-  if(currentFilter==='current' || currentFilter==='all'){
-    items = currentTreatment;
-  } else {
-    const p = periods[currentFilter];
-    items = p && p.treatment ? p.treatment : [];
-  }
   const txBox = document.getElementById('printTreatment');
-  txBox.innerHTML = items.length
-    ? '<h3>Traitement</h3><ul>' + items.map(t=>`<li>${t}</li>`).join('') + '</ul>'
+  txBox.innerHTML = currentTreatment.length
+    ? '<h3>Traitement</h3><ul>' + currentTreatment.map(t=>`<li>${t}</li>`).join('') + '</ul>'
     : '';
 }
 
@@ -776,7 +759,7 @@ function sheetFromEntries(entries, treatment){
   const aDia = avg(chrono.map(e=>e.dia));
   const aPul = avg(chrono.map(e=>e.pul));
   const rows = [];
-  rows.push(['Date','Heure', aSys!==null?+aSys.toFixed(1):'', aDia!==null?+aDia.toFixed(1):'', aPul!==null?+aPul.toFixed(1):'']);
+  rows.push(['Date','Heure', aSys!==null?Math.round(aSys):'', aDia!==null?Math.round(aDia):'', aPul!==null?Math.round(aPul):'']);
   chrono.forEach(e=> rows.push([e.date, e.heure, e.sys, e.dia, e.pul]));
   if(treatment && treatment.length){
     rows.push([]);
@@ -880,7 +863,7 @@ function downloadPeriodWorkbook(){
   periods.forEach(p=>{
     const entries = data.filter(e=> e.date>=p.start && e.date<=p.end);
     const s = sheetFromEntries(entries);
-    evoRows.push([p.label, p.start, p.end, s.aSys!==null?+s.aSys.toFixed(1):'', s.aDia!==null?+s.aDia.toFixed(1):'', s.aPul!==null?+s.aPul.toFixed(1):'', s.count]);
+    evoRows.push([p.label, p.start, p.end, s.aSys!==null?Math.round(s.aSys):'', s.aDia!==null?Math.round(s.aDia):'', s.aPul!==null?Math.round(s.aPul):'', s.count]);
   });
   const evoWs = XLSX.utils.aoa_to_sheet(evoRows);
   evoWs['!cols'] = [{wch:22},{wch:12},{wch:12},{wch:16},{wch:16},{wch:10},{wch:9}];
@@ -890,7 +873,7 @@ function downloadPeriodWorkbook(){
   const usedNames = new Set();
   periods.forEach(p=>{
     const entries = data.filter(e=> e.date>=p.start && e.date<=p.end);
-    const {ws} = sheetFromEntries(entries, p.treatment);
+    const {ws} = sheetFromEntries(entries, currentTreatment);
     let name = safeSheetName(p.label);
     let n = name, k=2;
     while(usedNames.has(n)){ n = safeSheetName(name.slice(0,28)+'-'+k); k++; }
